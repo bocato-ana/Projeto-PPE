@@ -4,12 +4,13 @@ import plotly.express as px
 
 st.title('📔Estudo - State of Data Brazil 2024-2025')
 st.subheader('🔎Sobre o Projeto:')
+
+
 st.write("""
 Instituição: Universidade Federal de São Paulo (Unifesp) - São José dos Campos  
 Curso: Bacharelado em Ciência e Tecnologia (BCT)   
 Orientadora: Profa. Dra. Lilian Berton  
 Discente: Ana Luiza Bocato
----
 """)
 st.write("""
 **Este dashboard é a primeira etapa da análise de dados**. 
