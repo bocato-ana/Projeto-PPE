@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.set_page_config(page_title="Meu Projeto Unifesp", layout="wide")
+st.set_page_config(page_title="Projeto Dados", layout="wide")
 
 st.title('Tabelo de estudo - State of Data Brazil 2024 - 2025')
 
