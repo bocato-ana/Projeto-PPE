@@ -30,7 +30,7 @@ dicionario_colunas = {
 with st.sidebar:
     st.title('🔗Links Úteis:')
     st.write('[State of Data Brazil](https://www.kaggle.com/datasets/datahackers/state-of-data-brazil-20242025)')
-    st.write('[Link Repositório GitHub]')
+    st.write('[Link Repositório GitHub](https://github.com/bocato-ana/Projeto-PPE.git)')
 
 
 if 'data' not in st.session_state:
