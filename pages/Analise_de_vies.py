@@ -41,6 +41,13 @@ if 'data' in st.session_state:
     ordem_nivel = ['Júnior', 'Pleno', 'Sênior', 'Gestão']
 
   
+    # 1. Defina as cores que você deseja aqui (use códigos Hex ou nomes em inglês)
+    cores_personalizadas = {
+        'Masculino': '#0077b6',  # Um azul mais profissional
+        'Feminino': '#9d4edd',   # Um roxo/violeta (fugindo do rosa padrão)
+        'Prefiro não informar': '#adb5bd'
+    }
+
     def criar_figura(df, eixo_x, cor_grupo, titulo, ordem_x, paleta):
         if tipo_visao == "Porcentagem (Proporcional)":
             df_contagem = df.groupby([eixo_x, cor_grupo]).size().reset_index(name='n')
@@ -49,12 +56,19 @@ if 'data' in st.session_state:
             
             fig = px.bar(df_contagem, x=eixo_x, y='Percentual (%)', color=cor_grupo,
                          barmode='group', category_orders={eixo_x: ordem_x},
-                         color_discrete_sequence=paleta, title=titulo,
+                         # TROQUE paleta POR cores_personalizadas AQUI:
+                         color_discrete_map=cores_personalizadas, 
+                         title=titulo,
                          labels={'Percentual (%)': '% do grupo'})
         else:
             fig = px.histogram(df, x=eixo_x, color=cor_grupo, barmode='group',
                                category_orders={eixo_x: ordem_x},
-                               color_discrete_sequence=paleta, title=titulo)
+                               # E AQUI TAMBÉM:
+                               color_discrete_map=cores_personalizadas, 
+                               title=titulo)
+        
+        # ... restante das configurações de layout (margens, eixos, etc)
+        return fig
         
         # Ajustes de Eixo
         fig.update_xaxes(
