@@ -2,30 +2,36 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
+# 1. Título e Configuração de Visão
 st.title("⚖️ Auditoria de Dados: Análise de Viés")
 
-# 1. Seletor de Métrica (Onde a mágica acontece)
 tipo_visao = st.radio(
     "📊 Escolha a métrica do gráfico:",
     options=["Quantidade Absoluta", "Porcentagem (Proporcional)"],
     horizontal=True,
-    help="A porcentagem é calculada sobre o total de pessoas de cada grupo. Isso permite comparar minorias (como Indígenas) de forma justa com maiorias."
+    help="A porcentagem é calculada sobre o total de cada grupo. Isso permite comparar minorias de forma justa com maiorias."
 )
 
 if 'data' in st.session_state:
+    # Criar uma cópia para preservar os dados originais da sessão
     df_base = st.session_state['data'].copy()
     
-    # 2. Filtros Laterais (Agora pegando todas as categorias reais)
+    # 2. Configuração dos Filtros na Sidebar
     st.sidebar.header("Filtros de Auditoria")
-    generos_sel = st.sidebar.multiselect("Gênero", options=df_base['Gênero'].unique(), default=df_base['Gênero'].unique())
-    cores_sel = st.sidebar.multiselect("Cor/Etnia", options=df_base['Cor/Etnia'].unique(), default=df_base['Cor/Etnia'].unique())
+    
+    generos_opcoes = df_base['Gênero'].unique().tolist()
+    generos_sel = st.sidebar.multiselect("Filtrar Gênero", options=generos_opcoes, default=generos_opcoes)
+    
+    cores_opcoes = df_base['Cor/Etnia'].unique().tolist()
+    cores_sel = st.sidebar.multiselect("Filtrar Cor/Etnia", options=cores_opcoes, default=cores_opcoes)
 
+    # Aplicação dos filtros ao DataFrame
     df_filtrado = df_base[
         (df_base['Gênero'].isin(generos_sel)) & 
         (df_base['Cor/Etnia'].isin(cores_sel))
     ]
 
-    # 3. Definição das Ordens (Para o gráfico não ficar bagunçado)
+    # 3. Definição de Ordens Categóricas (Obrigatório para o eixo X ficar correto)
     ordem_salario = [
         'Menos de R$ 1.000/mês', 'de R$ 1.001/mês a R$ 2.000/mês', 
         'de R$ 2.001/mês a R$ 3.000/mês', 'de R$ 3.001/mês a R$ 4.000/mês',
@@ -37,22 +43,34 @@ if 'data' in st.session_state:
     ]
     ordem_nivel = ['Júnior', 'Pleno', 'Sênior', 'Gestão']
 
-    # --- FUNÇÃO DE CÁLCULO PROPORCIONAL ---
+    # --- FUNÇÃO DE CÁLCULO E FORMATAÇÃO DE GRÁFICO ---
     def criar_figura(df, eixo_x, cor_grupo, titulo, ordem_x, paleta):
         if tipo_visao == "Porcentagem (Proporcional)":
-            # Agrupa, conta e calcula a % baseada no total de cada COR/GÊNERO
+            # Agrupa e conta
             df_contagem = df.groupby([eixo_x, cor_grupo]).size().reset_index(name='n')
+            # Calcula o total por grupo para a percentagem
             total_por_grupo = df_contagem.groupby(cor_grupo)['n'].transform('sum')
             df_contagem['Percentual (%)'] = (df_contagem['n'] / total_por_grupo) * 100
             
             fig = px.bar(df_contagem, x=eixo_x, y='Percentual (%)', color=cor_grupo,
                          barmode='group', category_orders={eixo_x: ordem_x},
                          color_discrete_sequence=paleta, title=titulo,
-                         labels={'Percentual (%)': '% dentro do próprio grupo'})
+                         labels={'Percentual (%)': '% do grupo'})
         else:
+            # Histograma para contagem absoluta
             fig = px.histogram(df, x=eixo_x, color=cor_grupo, barmode='group',
                                category_orders={eixo_x: ordem_x},
                                color_discrete_sequence=paleta, title=titulo)
+        
+        # --- AJUSTE DAS LEGENDAS (Onde estava o problema) ---
+        fig.update_xaxes(
+            categoryorder='array', 
+            categoryarray=ordem_x,
+            tickmode='linear',  # Força a exibição de todos os itens
+            dtick=1,            # Garante que não salte nenhuma legenda
+            tickangle=45        # Inclina para caberem as 13 faixas
+        )
+        
         return fig
 
     # --- EXIBIÇÃO DOS GRÁFICOS ---
@@ -68,10 +86,8 @@ if 'data' in st.session_state:
 
     st.divider()
 
-    # --- SEÇÃO DE TECNOLOGIA (ACRÉSCIMO) ---
     st.subheader("🤖 Ferramentas e Tecnologias")
-    # Usando a mesma função criar_figura para manter a lógica de porcentagem correta
-    fig_lang = criar_figura(df_filtrado, 'Linguagem mais usada', 'Gênero', "Linguagem Mais Utilizada por Gênero", None, px.colors.qualitative.Prism)
+    fig_lang = criar_figura(df_filtrado, 'Linguagem mais usada', 'Gênero', "Linguagem por Gênero", None, px.colors.qualitative.Prism)
     st.plotly_chart(fig_lang, use_container_width=True)
 
     st.divider()
@@ -83,10 +99,11 @@ if 'data' in st.session_state:
         st.plotly_chart(criar_figura(df_filtrado, 'Nivel', 'Gênero', "Nível por Gênero", ordem_nivel, px.colors.qualitative.Pastel), use_container_width=True)
         
     with c4:
-        # Gráfico de Linhas (Cálculo manual de tendência)
+        # Gráfico de Linhas para Tendência
         df_line = df_filtrado.groupby(['Nivel', 'Gênero']).size().reset_index(name='qtd')
         if tipo_visao == "Porcentagem (Proporcional)":
-            df_line['Métrica'] = (df_line['qtd'] / df_line.groupby('Gênero')['qtd'].transform('sum')) * 100
+            total_gen_line = df_line.groupby('Gênero')['qtd'].transform('sum')
+            df_line['Métrica'] = (df_line['qtd'] / total_gen_line) * 100
             y_lab = "Porcentagem (%)"
         else:
             df_line['Métrica'] = df_line['qtd']
@@ -97,9 +114,8 @@ if 'data' in st.session_state:
                            labels={'Métrica': y_lab})
         st.plotly_chart(fig_line, use_container_width=True)
 
-    # Mensagem educativa sobre os dados pequenos (Indígenas/Amarelos)
     if tipo_visao == "Porcentagem (Proporcional)":
-        st.info("💡 **Dica de Auditoria:** Grupos com poucos respondentes (como Indígenas e Amarelos) podem apresentar barras muito altas. Isso ocorre porque, estatisticamente, cada indivíduo representa uma fatia maior do seu grupo. Analise com cautela!")
+        st.info("💡 **Dica:** Grupos menores podem ter variações bruscas em percentagem. Isso ocorre porque cada indivíduo representa uma fatia maior do seu total grupal.")
 
 else:
-    st.error("⚠️ Inicie pela Página Inicial para carregar os dados.")
+    st.error("⚠️ Dados não carregados. Por favor, inicie pela Página Inicial.")
