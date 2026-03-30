@@ -52,6 +52,15 @@ if 'data' not in st.session_state:
     # Renomeia (usando df_filtrado em vez do df_raw que não existia)
     df_limpo = df_filtrado.rename(columns=dicionario_colunas)
 
+    # 2. Renomeia primeiro (para usarmos os nomes amigáveis na limpeza)
+    df_limpo = df_filtrado.rename(columns=dicionario_colunas)
+
+    # 3. LIMPEZA DE DADOS (O que faltava!)
+    # Remove as linhas onde essas colunas vitais estão vazias (NaN)
+    colunas_vitais = ['Salário', 'Tempo de experiencia', 'Nivel']
+    df_limpo = df_limpo.dropna(subset=colunas_vitais)
+
     # Salva o DataFrame já bonitinho na sessão
     st.session_state['data'] = df_limpo
+
 

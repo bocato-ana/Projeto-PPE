@@ -2,165 +2,96 @@ import streamlit as st
 import pandas as pd
 import plotly.express as px
 
-# 1. Título da Página (já usando o layout wide da app.py)
-st.title("⚖️ Análise de Viés e Disparidade Salarial")
+st.title("⚖️ Auditoria de Dados: Análise de Viés")
 
-# 2. Carregar os dados "limpos" da sessão
+# 1. Seletor de Métrica (Onde a mágica acontece)
+tipo_visao = st.radio(
+    "📊 Escolha a métrica do gráfico:",
+    options=["Quantidade Absoluta", "Porcentagem (Proporcional)"],
+    horizontal=True,
+    help="A porcentagem é calculada sobre o total de pessoas de cada grupo. Isso permite comparar minorias (como Indígenas) de forma justa com maiorias."
+)
+
 if 'data' in st.session_state:
-    df = st.session_state['data']
+    df_base = st.session_state['data'].copy()
     
-    # 3. Configurar os Filtros na Barra Lateral (Sidebar)
+    # 2. Filtros Laterais (Agora pegando todas as categorias reais)
     st.sidebar.header("Filtros de Auditoria")
-    
-    # Filtro de Gênero
-    lista_generos = df['Gênero'].unique().tolist()
-    generos_sel = st.sidebar.multiselect("Selecione o Gênero", options=lista_generos, default=lista_generos)
-    
-    # Filtro de Cor/Etnia
-    lista_cores = df['Cor/Etnia'].unique().tolist()
-    cores_sel = st.sidebar.multiselect("Selecione Cor/Etnia", options=lista_cores, default=lista_cores)
+    generos_sel = st.sidebar.multiselect("Gênero", options=df_base['Gênero'].unique(), default=df_base['Gênero'].unique())
+    cores_sel = st.sidebar.multiselect("Cor/Etnia", options=df_base['Cor/Etnia'].unique(), default=df_base['Cor/Etnia'].unique())
 
-    # Aplicando os filtros ao DataFrame
-    df_filtrado = df[
-        (df['Gênero'].isin(generos_sel)) & 
-        (df['Cor/Etnia'].isin(cores_sel))
+    df_filtrado = df_base[
+        (df_base['Gênero'].isin(generos_sel)) & 
+        (df_base['Cor/Etnia'].isin(cores_sel))
     ]
 
-    
-    
-    # Definindo a ordem salarial para o gráfico não ficar bagunçado (ordem alfabética)
+    # 3. Definição das Ordens (Para o gráfico não ficar bagunçado)
     ordem_salario = [
-        'Menos de R$ 1.000/mês', 
-        'de R$ 1.001/mês a R$ 2.000/mês', 
-        'de R$ 2.001/mês a R$ 3.000/mês',
-        'de R$ 3.001/mês a R$ 4.000/mês',
-        'de R$ 4.001/mês a R$ 6.000/mês',
-        'de R$ 6.001/mês a R$ 8.000/mês',
-        'de R$ 8.001/mês a R$ 12.000/mês',
-        'de R$ 12.001/mês a R$ 16.000/mês',
-        'de R$ 16.001/mês a R$ 20.000/mês',
-        'de R$ 20.001/mês a R$ 25.000/mês',
-        'de R$ 25.001/mês a R$ 30.000/mês',
-        'de R$ 30.001/mês a R$ 40.000/mês',
+        'Menos de R$ 1.000/mês', 'de R$ 1.001/mês a R$ 2.000/mês', 
+        'de R$ 2.001/mês a R$ 3.000/mês', 'de R$ 3.001/mês a R$ 4.000/mês',
+        'de R$ 4.001/mês a R$ 6.000/mês', 'de R$ 6.001/mês a R$ 8.000/mês',
+        'de R$ 8.001/mês a R$ 12.000/mês', 'de R$ 12.001/mês a R$ 16.000/mês',
+        'de R$ 16.001/mês a R$ 20.000/mês', 'de R$ 20.001/mês a R$ 25.000/mês',
+        'de R$ 25.001/mês a R$ 30.000/mês', 'de R$ 30.001/mês a R$ 40.000/mês',
         'Acima de R$ 40.001/mês'
     ]
-    # Layout em Colunas para os gráficos principais
-    col1, col2 = st.columns(2)
+    ordem_nivel = ['Júnior', 'Pleno', 'Sênior', 'Gestão']
 
-    with col1:
-        st.subheader("Salário (mês) por Gênero")
-        fig_gen = px.histogram(
-            df_filtrado, 
-            x='Salário', 
-            color='Gênero', 
-            barmode='group',
-            category_orders={'Salário': ordem_salario},
-            color_discrete_sequence=px.colors.qualitative.Safe 
-        )
-        st.plotly_chart(fig_gen, use_container_width=True)
+    # --- FUNÇÃO DE CÁLCULO PROPORCIONAL ---
+    def criar_figura(df, eixo_x, cor_grupo, titulo, ordem_x, paleta):
+        if tipo_visao == "Porcentagem (Proporcional)":
+            # Agrupa, conta e calcula a % baseada no total de cada COR/GÊNERO
+            df_contagem = df.groupby([eixo_x, cor_grupo]).size().reset_index(name='n')
+            total_por_grupo = df_contagem.groupby(cor_grupo)['n'].transform('sum')
+            df_contagem['Percentual (%)'] = (df_contagem['n'] / total_por_grupo) * 100
+            
+            fig = px.bar(df_contagem, x=eixo_x, y='Percentual (%)', color=cor_grupo,
+                         barmode='group', category_orders={eixo_x: ordem_x},
+                         color_discrete_sequence=paleta, title=titulo,
+                         labels={'Percentual (%)': '% dentro do próprio grupo'})
+        else:
+            fig = px.histogram(df, x=eixo_x, color=cor_grupo, barmode='group',
+                               category_orders={eixo_x: ordem_x},
+                               color_discrete_sequence=paleta, title=titulo)
+        return fig
 
-    with col2:
-        st.subheader("Salário(mês) por Cor/Etnia")
-        fig_raca = px.histogram(
-            df_filtrado, 
-            x='Salário', 
-            color='Cor/Etnia', 
-            barmode='group',
-            category_orders={'Salário': ordem_salario},
+    # --- EXIBIÇÃO DOS GRÁFICOS ---
     
-            color_discrete_sequence=px.colors.qualitative.Bold 
-        )
-        st.plotly_chart(fig_raca, use_container_width=True)
-
+    st.subheader("💰 Distribuição Salarial")
+    c1, c2 = st.columns(2)
     
-    st.divider()
-    st.subheader("Distribuição por Faixa Etária")
-    fig_idade = px.histogram(
-        df_filtrado, 
-        x='Salário', 
-        color='Idade', 
-        barmode='group',
-        category_orders={'Salário': ordem_salario},
-        height=500 # Aumentando a altura para este gráfico
-    )
-    st.plotly_chart(fig_idade, use_container_width=True)
-
-    st.header("📊 Evolução na Carreira")
-    col1, col2 = st.columns(2)
-
-    with col1:
-        st.subheader("Nível por Gênero")
-        # Definindo a ordem lógica dos níveis
-        ordem_nivel = ['Júnior', 'Pleno', 'Sênior', 'Gestão'] 
+    with c1:
+        st.plotly_chart(criar_figura(df_filtrado, 'Salário', 'Gênero', "Salário por Gênero", ordem_salario, px.colors.qualitative.Safe), use_container_width=True)
         
-        fig_nivel = px.histogram(
-            df, 
-            x='Nivel', 
-            color='Gênero', 
-            barmode='group',
-            category_orders={'Nivel': ordem_nivel},
-            color_discrete_sequence=px.colors.qualitative.Safe
-        )
-        st.plotly_chart(fig_nivel, use_container_width=True)
-
-    ordem_experiencia = [
-    'Não tive experinência na área de TI/Engenharia de Software antes de começar a trabalhar na área de dados',
-    'Menos de 1 ano',
-    'de 1 a 2 anos',
-    'de 2 a 3 anos',
-    'de 3 a 4 anos',
-    'de 4 a 5 anos',
-    'de 5 a 6 anos',
-    'de 7 a 10 anos',
-    'Mais de 10 anos'
-]
-    with col2:
-        st.subheader("Tempo de Experiência por Gênero")
-    
-        fig_exp = px.histogram(
-            df, 
-            x='Tempo de experiencia', 
-            color='Gênero', 
-            barmode='group',
-            category_orders={'Tempo de experiencia': ordem_experiencia},
-            color_discrete_sequence=px.colors.qualitative.Pastel
-        )
-        st.plotly_chart(fig_exp, use_container_width=True, height=800)
+    with c2:
+        st.plotly_chart(criar_figura(df_filtrado, 'Salário', 'Cor/Etnia', "Salário por Cor/Etnia", ordem_salario, px.colors.qualitative.Bold), use_container_width=True)
 
     st.divider()
-    st.header("🤖 Ferramentas e Tecnologias")
-    col3, col4 = st.columns(2)
-
-    with col3:
-        st.subheader("Linguagem Mais Usada")
+    
+    st.subheader("📈 Nível e Progressão")
+    c3, c4 = st.columns(2)
+    
+    with c3:
+        st.plotly_chart(criar_figura(df_filtrado, 'Nivel', 'Gênero', "Nível por Gênero", ordem_nivel, px.colors.qualitative.Pastel), use_container_width=True)
         
-        fig_pizza_lang = px.pie(
-            df, 
-            names='Linguagem mais usada', 
-            hole=0.4,
-            color_discrete_sequence=px.colors.sequential.RdBu
-        )
-        st.plotly_chart(fig_pizza_lang, use_container_width=True)
+    with c4:
+        # Gráfico de Linhas (Cálculo manual de tendência)
+        df_line = df_filtrado.groupby(['Nivel', 'Gênero']).size().reset_index(name='qtd')
+        if tipo_visao == "Porcentagem (Proporcional)":
+            df_line['Métrica'] = (df_line['qtd'] / df_line.groupby('Gênero')['qtd'].transform('sum')) * 100
+            y_lab = "Porcentagem (%)"
+        else:
+            df_line['Métrica'] = df_line['qtd']
+            y_lab = "Qtd. Absoluta"
+            
+        fig_line = px.line(df_line, x='Nivel', y='Métrica', color='Gênero', markers=True,
+                           category_orders={'Nivel': ordem_nivel}, title="Acesso a Cargos de Liderança",
+                           labels={'Métrica': y_lab})
+        st.plotly_chart(fig_line, use_container_width=True)
 
-
-  
-    st.divider()
-    st.subheader("📈 Tendência de Nível (Visualização em Linhas)")
-    
-    
-    # Agrupando os dados para o gráfico de linhas funcionar
-    df_linhas = df.groupby(['Nivel', 'Gênero']).size().reset_index(name='Quantidade')
-    
-    fig_linhas = px.line(
-        df_linhas, 
-        x='Nivel', 
-        y='Quantidade', 
-        color='Gênero',
-        markers=True,
-        category_orders={'Nivel': ordem_nivel},
-        title="Fluxo de Profissionais por Nível Hierárquico"
-    )
-    st.plotly_chart(fig_linhas, use_container_width=True)
+    # Mensagem educativa sobre os dados pequenos (Indígenas/Amarelos)
+    if tipo_visao == "Porcentagem (Proporcional)":
+        st.info("💡 **Dica de Auditoria:** Grupos com poucos respondentes (como Indígenas e Amarelos) podem apresentar barras muito altas. Isso ocorre porque, estatisticamente, cada indivíduo representa uma fatia maior do seu grupo. Analise com cautela!")
 
 else:
-    st.error("⚠️ Dados não carregados. Por favor, inicie pela Página Inicial.")
+    st.error("⚠️ Inicie pela Página Inicial para carregar os dados.")
