@@ -1,6 +1,6 @@
 import streamlit as st
 
-st.title("📊 Resumo da Auditoria Algorítmica: Viés de Gênero")
+st.title("📊 Resumo da Auditoria: Viés de Gênero")
 st.subheader('Estudo realizado através de regressão lógica e árvore de decisão')
 
 st.write("""Todo o estudo se encontra no repositório do [GitHub - notebooks](https://github.com/bocato-ana/Projeto-PPE/blob/main/notebooks/treino_modelo.ipynb)""")
@@ -14,7 +14,7 @@ O objetivo deste estudo foi verificar se modelos de Inteligência Artificial, tr
 
 ---
 
-### 🌳 1. Árvore de Decisão: O "Mapa do Privilégio"
+### 🌳 1. Árvore de Decisão:
 A Árvore de Decisão foi utilizada para visualizar as regras lógicas que a IA cria para classificar um salário.
 
 * **Funcionamento:** O modelo cria "nós" de decisão. Em nosso estudo, o **Nível (Sênior/Gestão)** dominou o topo (nó raiz), mas o **Gênero** apareceu logo em seguida como um divisor estatístico determinante.
@@ -25,7 +25,7 @@ A Árvore de Decisão foi utilizada para visualizar as regras lógicas que a IA 
 
 ---
 
-### 📈 2. Regressão Logística: Os "Pesos da Corda"
+### 📈 2. Regressão Logística:
 Enquanto a árvore mostra o caminho, a Regressão Logística revelou a **intensidade matemática** de cada variável através de coeficientes.
 
 * **Funcionamento:** Cada atributo "puxa" a probabilidade do salário para faixas mais altas ou mais baixas.
