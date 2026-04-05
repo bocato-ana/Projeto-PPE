@@ -3,7 +3,7 @@ import streamlit as st
 st.title("📊 Resumo da Auditoria Algorítmica: Viés de Gênero")
 st.subheader('Estudo realizado através de regressão lógica e árvore de decisão')
 
-st.write("""Todo o estudo se encontra no repositório do [GitHub - notebooks(https://github.com/bocato-ana/Projeto-PPE/blob/main/notebooks/treino_modelo.ipynb)""")
+st.write("""Todo o estudo se encontra no repositório do [GitHub - notebooks](https://github.com/bocato-ana/Projeto-PPE/blob/main/notebooks/treino_modelo.ipynb)""")
 
 import streamlit as st
 
@@ -42,6 +42,4 @@ Investigamos o perfil de quem escolheu a opção **"Prefiro não Informar/ Outro
 * **Achado Estatístico:** O perfil salarial deste grupo é muito superior à média das mulheres, aproximando-se do topo da pirâmide salarial masculina.
 * **Conclusão:** Isso corrobora a suspeita de que **homens em cargos de alta gestão** tendem a omitir dados demográficos mais do que outros grupos. Para a IA, isso mascara parte do privilégio masculino, sugerindo que o viés real pode ser ainda **mais profundo** do que o detectado pelo modelo.
 
----
-**Análise desenvolvida para o projeto de Iniciação Científica - UNIFESP.**
 """)
